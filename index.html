@@ -1,11 +1,123 @@
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Hello World Page</title>
-    </head>
-    <body>
-        <h1>Hello World!</h1>
-        <p>This is my first basic HTML page.</p>
-    </body>
-    </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Catalog</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #fafafa; }
+    h1 { text-align: center; }
+    .filter { text-align: center; margin-bottom: 20px; }
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .product-card {
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .product-name {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 5px;
+    }
+    .category { color: #777; }
+  </style>
+</head>
+<body>
 
+<h1>Product Catalog</h1>
+
+<div class="filter">
+  <label for="categorySelect">Filter by Category: </label>
+  <select id="categorySelect" onchange="filterByCategory()">
+    <option value="all">All</option>
+  </select>
+</div>
+
+<div class="catalog" id="productCatalog">
+  <!-- Products will appear here -->
+</div>
+
+<script>
+  const catalogContainer = document.getElementById('productCatalog');
+  const categorySelect = document.getElementById('categorySelect');
+  let products = [];
+
+  const csvURL = "products.csv"; // Change to your own CSV path if needed
+
+  function displayProducts(filter = "all") {
+    catalogContainer.innerHTML = "";
+
+    const filtered = filter === "all" ? products : products.filter(p => p.category === filter);
+
+    if (filtered.length === 0) {
+      catalogContainer.innerHTML = "<p>No products found in this category.</p>";
+      return;
+    }
+
+    filtered.forEach(product => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <div class="product-name">${product.name}</div>
+        <div class="category">${product.category}</div>
+      `;
+      catalogContainer.appendChild(card);
+    });
+  }
+
+  function populateCategoryOptions() {
+    const categories = Array.from(new Set(products.map(p => p.category))).sort();
+    categories.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat;
+      option.textContent = cat;
+      categorySelect.appendChild(option);
+    });
+  }
+
+  function filterByCategory() {
+    const selectedCategory = categorySelect.value;
+    displayProducts(selectedCategory);
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    return lines.slice(1).map(line => {
+      const values = line.split(",");
+      const entry = {};
+      headers.forEach((header, i) => {
+        entry[header] = values[i]?.trim();
+      });
+      return entry;
+    });
+  }
+
+  function loadCSV(url) {
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error("Network response was not ok");
+        return response.text();
+      })
+      .then(csvText => {
+        products = parseCSV(csvText);
+        populateCategoryOptions();
+        displayProducts();
+      })
+      .catch(error => {
+        console.error("Error loading CSV:", error);
+        catalogContainer.innerHTML = "<p>Error loading product data.</p>";
+      });
+  }
+
+  // Load the CSV on page load
+  loadCSV(csvURL);
+</script>
+
+</body>
+</html>
